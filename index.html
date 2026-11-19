@@ -322,7 +322,9 @@ function render(){
   $('inbox').textContent = D.scout.inbox.unread;
   $('flagged').textContent = D.scout.inbox.flagged;
   $('sources').innerHTML = D.scout.sources.map(s=>`
-    <div class="row"><span class="d">${esc(s.name)}</span><span class="status ${esc(s.status)}"><span class="dot"></span>${esc(s.status).toUpperCase()}</span></div>`).join('');
+    <div class="row"><span class="d">${esc(s.name)}</span><span class="status ${esc(s.status)}"><span class="dot"></span>${esc(s.status).toUpperCase()}</span></div>`).join('')
+    + ((D.scout.highlights||[]).length ? '<div class="sub" style="margin:12px 0 4px;letter-spacing:.2em">HIGHLIGHTS</div>' + D.scout.highlights.map(h=>`
+    <div class="row"><span class="tag">${esc(h.src).toUpperCase()}</span><span class="d" style="font-size:14px">${esc(h.text)}</span></div>`).join('') : '');
 
   $('queue').innerHTML = D.operator.queue.map(q=>`
     <div class="row"><span class="tag">${esc(q.type).toUpperCase()}</span><span class="d">${esc(q.subject)}<br><small class="sub">to ${esc(q.to)}</small></span>
