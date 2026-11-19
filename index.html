@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S · Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+/* =====================================================================
+   MOCK DATA · every number on the screen comes from this one object.
+   Later, Supabase (table: jarvis_state, row id 'main') overrides any
+   field you send it. You never have to redesign the layout.
+   This file is public on GitHub Pages, so keep real private data in
+   Supabase, not here.
+   ===================================================================== */
+const MOCK_DATA = {
+  user: { name: "Z", callsign: "Coach" },
+  system: { mode: "MOCK DATA", version: "1.0" },
+  weather: { city: "Alexandria, VA", tempF: 48, cond: "Clear skies", high: 54, low: 39, wind: "6 mph NW" },
+
+  advisor: {
+    top3: [
+      { tier: 1, label: "Blocking revenue", text: "Close Winter 3v3 early bird pricing tonight", why: "28 of 40 teams in. Price goes up Friday, 4 teams have unpaid carts." },
+      { tier: 2, label: "Outperforming", text: "Double down on the U12 bracket", why: "U12 signups are running 40% ahead of last year. Add 4 slots." },
+      { tier: 3, label: "Slow leak", text: "Reply to 3 flagged parent emails", why: "Oldest is 2 days old. Operator has drafts ready for review." }
+    ],
+    loop: [
+      { text: "Submit UEFA A Licence assignment draft", days: 3 },
+      { text: "File Prado Wyne LLC articles with Virginia SCC", days: 5 },
+      { text: "Upload session plan to DC Power shared drive", days: 1 }
+    ]
+  },
+
+  schedule: [
+    { time: "6:30 AM", title: "Strength session", tag: "Fitness" },
+    { time: "10:00 AM", title: "DC Power FC training · assistant coach", tag: "DC Power" },
+    { time: "1:30 PM", title: "Video review · How We Defend", tag: "DC Power" },
+    { time: "5:30 PM", title: "ASA Girls Academy practice", tag: "ASA" },
+    { time: "8:00 PM", title: "UEFA A Licence study block", tag: "Licence" }
+  ],
+
+  scout: {
+    lastRun: "6:00 AM",
+    sources: [
+      { name: "Google Calendar", status: "ok" },
+      { name: "Gmail", status: "ok" },
+      { name: "TeamSnap", status: "ok" },
+      { name: "ASA Slack", status: "ok" },
+      { name: "Stripe", status: "unavailable" },
+      { name: "Supabase", status: "standby" }
+    ],
+    inbox: { unread: 14, flagged: 3, parents: 5 }
+  },
+
+  operator: {
+    queue: [
+      { type: "Email", to: "ASA parents", subject: "Saturday travel times", status: "Draft ready" },
+      { type: "Slack", to: "#ga-coaches", subject: "Weekend field assignments", status: "Draft ready" },
+      { type: "Email", to: "3v3 registrants", subject: "Early bird ends Friday", status: "Needs review" },
+      { type: "Post", to: "Instagram", subject: "Winter 3v3 bracket reveal", status: "Queued" }
+    ]
+  },
+
+  coaching: {
+    dcpower: { next: "Matchday 14 · Home", when: "Sat 7:00 PM", focus: "Rest defence and counter press" },
+    asa: { team: "Girls Academy", next: "League match · Away", when: "Sun 11:00 AM", roster: "18 of 20 available" },
+    licence: { course: "UEFA A Licence", next: "Assignment 3 · Session analysis", due: "Nov 24", progress: 62 }
+  },
+
+  tournament: { name: "Winter 3v3 Classic", date: "Dec 13", teams: 28, cap: 40, revenue: 4200, goal: 6000 },
+
+  ventures: [
+    { name: "Prado & Co.", task: "LLC filing and EIN", pct: 40 },
+    { name: "The Hunt", task: "Next estate sale prep", pct: 70 },
+    { name: "Coaching website", task: "Homepage and booking page", pct: 25 }
+  ],
+
+  fitness: { workouts: 3, workoutGoal: 5, steps: 8420, stepsGoal: 10000, sleep: 6.8 }
+};
+</script>
+<style>
+:root{
+  --bg:#03070d; --panel:rgba(8,22,34,.72); --line:rgba(0,212,255,.22); --cyan:#00d4ff;
+  --cyan2:#7ff3ff; --gold:#ffb347; --red:#ff4d5e; --green:#3dffa8; --text:#cfefff; --dim:#6f93a8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:radial-gradient(ellipse at 50% 40%,#082036 0%,var(--bg) 65%);color:var(--text);
+  font-family:'Rajdhani',sans-serif;overflow-x:hidden;min-height:100vh}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:48px 48px;mask-image:radial-gradient(ellipse at center,#000 20%,transparent 75%)}
+body:after{content:"";position:fixed;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px)}
+.mono{font-family:'Orbitron',sans-serif;letter-spacing:.12em}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--line);position:relative;z-index:2}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .logo{width:38px;height:38px;border:2px solid var(--cyan);border-radius:50%;display:grid;place-items:center;box-shadow:0 0 18px var(--cyan) inset,0 0 12px var(--cyan)}
+.brand .logo i{width:10px;height:10px;background:var(--cyan2);border-radius:50%;box-shadow:0 0 12px var(--cyan2)}
+.brand h1{font-family:'Orbitron';font-size:20px;letter-spacing:.35em;color:var(--cyan2)}
+.brand small{display:block;color:var(--dim);letter-spacing:.2em;font-size:11px}
+.hdr-right{display:flex;align-items:center;gap:22px}
+.clock{font-family:'Orbitron';font-size:22px;color:var(--cyan2);text-align:right}
+.clock small{display:block;font-size:10px;color:var(--dim);letter-spacing:.25em}
+.pill{border:1px solid var(--line);padding:6px 12px;font-size:12px;letter-spacing:.2em;color:var(--gold);font-family:'Orbitron'}
+.pill.live{color:var(--green)}
+.btn{background:transparent;border:1px solid var(--cyan);color:var(--cyan2);font-family:'Orbitron';letter-spacing:.15em;
+  font-size:12px;padding:10px 16px;cursor:pointer;transition:.2s;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.btn:hover{background:rgba(0,212,255,.15);box-shadow:0 0 18px rgba(0,212,255,.4)}
+.btn.primary{background:rgba(0,212,255,.18)}
+.icon-btn{background:none;border:1px solid var(--line);color:var(--dim);width:38px;height:38px;cursor:pointer;font-size:18px}
+.icon-btn:hover{color:var(--cyan2);border-color:var(--cyan)}
+
+main{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;padding:18px 28px 28px;position:relative;z-index:2}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);padding:16px 18px;position:relative;backdrop-filter:blur(4px)}
+.panel:before,.panel:after{content:"";position:absolute;width:14px;height:14px;border:2px solid var(--cyan)}
+.panel:before{top:-2px;left:-2px;border-right:0;border-bottom:0}
+.panel:after{bottom:-2px;right:-2px;border-left:0;border-top:0}
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.ph h2{font-family:'Orbitron';font-size:12px;letter-spacing:.28em;color:var(--cyan)}
+.ph span{font-size:11px;color:var(--dim);letter-spacing:.15em}
+.row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed rgba(0,212,255,.12);gap:10px}
+.row:last-child{border-bottom:0}
+.row .t{color:var(--cyan2);font-weight:600;min-width:72px;font-size:14px}
+.row .d{flex:1;font-size:15px}
+.tag{font-size:10px;letter-spacing:.15em;padding:2px 7px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+.tag.DC{color:var(--gold);border-color:rgba(255,179,71,.4)}
+.tag.ASA{color:var(--green);border-color:rgba(61,255,168,.4)}
+.status{font-size:11px;letter-spacing:.12em}
+.ok{color:var(--green)} .unavailable{color:var(--red)} .standby{color:var(--gold)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:currentColor;box-shadow:0 0 8px currentColor}
+
+.bar{height:6px;background:rgba(0,212,255,.1);position:relative;margin-top:6px}
+.bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--cyan),var(--cyan2));box-shadow:0 0 10px var(--cyan)}
+.big{font-family:'Orbitron';font-size:30px;color:var(--cyan2)}
+.sub{color:var(--dim);font-size:13px;letter-spacing:.08em}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{border:1px solid var(--line);padding:10px 12px}
+.stat .v{font-family:'Orbitron';font-size:20px;color:var(--cyan2)}
+.stat .l{font-size:11px;letter-spacing:.18em;color:var(--dim)}
+
+/* Advisor */
+.prio{display:flex;gap:12px;padding:10px 0;border-bottom:1px dashed rgba(0,212,255,.12)}
+.prio:last-child{border-bottom:0}
+.prio .n{font-family:'Orbitron';font-size:22px;width:30px;color:var(--cyan2)}
+.prio.t1 .n{color:var(--red)} .prio.t2 .n{color:var(--green)} .prio.t3 .n{color:var(--gold)}
+.prio b{display:block;font-size:16px}
+.prio small{color:var(--dim);font-size:13px}
+.prio em{font-style:normal;font-size:10px;letter-spacing:.18em;color:var(--dim)}
+.loop .row .d{font-size:14px}
+.days{font-family:'Orbitron';font-size:11px;color:var(--gold)}
+.days.hot{color:var(--red)}
+
+/* Orb */
+.core{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px 10px 18px}
+.orb-wrap{position:relative;width:320px;height:320px;max-width:80vw;max-height:80vw;cursor:pointer;user-select:none}
+.ring{position:absolute;inset:0;border-radius:50%;border:2px solid transparent}
+.r1{border-top-color:var(--cyan);border-bottom-color:var(--cyan);animation:spin 9s linear infinite}
+.r2{inset:22px;border:1px dashed rgba(0,212,255,.5);animation:spin 22s linear infinite reverse}
+.r3{inset:44px;border-left-color:var(--cyan2);border-right-color:var(--cyan2);animation:spin 5s linear infinite}
+.r4{inset:62px;border:6px solid rgba(0,212,255,.12);border-top-color:rgba(0,212,255,.6);animation:spin 14s linear infinite}
+.orb{position:absolute;inset:92px;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,#e9fdff 0%,var(--cyan2) 18%,var(--cyan) 40%,rgba(0,90,140,.6) 70%,transparent 72%);
+  box-shadow:0 0 60px var(--cyan),0 0 120px rgba(0,212,255,.45);animation:breathe 3.5s ease-in-out infinite}
+.ticks{position:absolute;inset:-14px;border-radius:50%;
+  background:repeating-conic-gradient(rgba(0,212,255,.55) 0 1deg,transparent 1deg 6deg);
+  -webkit-mask:radial-gradient(circle,transparent 63%,#000 64%,#000 67%,transparent 68%);mask:radial-gradient(circle,transparent 63%,#000 64%,#000 67%,transparent 68%)}
+.orb-wrap.listening .orb{background:radial-gradient(circle,#fff 0%,#ffd1d6 15%,var(--red) 42%,rgba(140,0,20,.6) 70%,transparent 72%);box-shadow:0 0 70px var(--red),0 0 140px rgba(255,77,94,.5);animation:breathe 1s ease-in-out infinite}
+.orb-wrap.listening .r1,.orb-wrap.listening .r3{border-top-color:var(--red);border-bottom-color:var(--red);border-left-color:var(--red);border-right-color:var(--red)}
+.orb-wrap.speaking .orb{animation:talk .35s ease-in-out infinite alternate}
+.orb-wrap.thinking .r1{animation-duration:1.5s}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes breathe{50%{transform:scale(1.06);filter:brightness(1.2)}}
+@keyframes talk{from{transform:scale(.96)}to{transform:scale(1.12);filter:brightness(1.35)}}
+.core-label{font-family:'Orbitron';letter-spacing:.4em;color:var(--cyan2);margin-top:20px;font-size:14px;text-align:center}
+.core-hint{color:var(--dim);font-size:13px;letter-spacing:.12em;margin-top:6px;text-align:center}
+.core-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+
+/* Console */
+.console{height:220px;overflow-y:auto;font-size:15px;padding-right:6px}
+.msg{margin:6px 0;line-height:1.35}
+.msg .who{font-family:'Orbitron';font-size:10px;letter-spacing:.2em;margin-right:8px}
+.msg.j .who{color:var(--cyan)} .msg.u .who{color:var(--gold)}
+.cmd{display:flex;gap:8px;margin-top:10px}
+.cmd input{flex:1;background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--text);padding:10px 12px;font-family:'Rajdhani';font-size:15px;outline:none}
+.cmd input:focus{border-color:var(--cyan)}
+
+/* Settings */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;place-items:center;z-index:50}
+.modal.open{display:grid}
+.modal .panel{width:min(520px,92vw)}
+.field{margin:10px 0}
+.field label{display:block;font-size:11px;letter-spacing:.2em;color:var(--dim);margin-bottom:4px}
+.field input{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--text);padding:9px 10px;font-family:'Rajdhani';font-size:15px}
+.note{font-size:13px;color:var(--dim);margin-top:8px;line-height:1.4}
+
+::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:var(--line)}
+@media(max-width:1150px){main{grid-template-columns:1fr 1fr}.center{grid-column:1/-1;order:-1}}
+@media(max-width:720px){main{grid-template-columns:1fr;padding:12px}header{flex-wrap:wrap;gap:10px;padding:12px}.clock{font-size:18px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo"><i></i></div>
+    <div><h1>J.A.R.V.I.S</h1><small>PERSONAL COMMAND CENTER</small></div>
+  </div>
+  <div class="hdr-right">
+    <span class="pill" id="modePill">MOCK DATA</span>
+    <div class="clock"><span id="clock">00:00</span><small id="date">LOADING</small></div>
+    <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT -->
+  <div class="col">
+    <section class="panel">
+      <div class="ph"><h2>ADVISOR · TOP 3</h2><span>TODAY</span></div>
+      <div id="top3"></div>
+    </section>
+    <section class="panel loop">
+      <div class="ph"><h2>ACCOUNTABILITY LOOP</h2><span>LAST 7 DAYS</span></div>
+      <div id="loop"></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>SCHEDULE</h2><span id="schedCount"></span></div>
+      <div id="schedule"></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>PERFORMANCE</h2><span>THIS WEEK</span></div>
+      <div class="grid2">
+        <div class="stat"><div class="v" id="fW"></div><div class="l">WORKOUTS</div></div>
+        <div class="stat"><div class="v" id="fS"></div><div class="l">STEPS TODAY</div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- CENTER -->
+  <div class="col center">
+    <section class="core">
+      <div class="orb-wrap" id="orb">
+        <div class="ticks"></div><div class="ring r1"></div><div class="ring r2"></div>
+        <div class="ring r3"></div><div class="ring r4"></div><div class="orb"></div>
+      </div>
+      <div class="core-label" id="coreLabel">SYSTEMS ONLINE</div>
+      <div class="core-hint">CLICK THE ORB OR HOLD SPACE TO TALK</div>
+      <div class="core-actions">
+        <button class="btn primary" id="briefBtn">MORNING BRIEF</button>
+        <button class="btn" data-say="schedule">SCHEDULE</button>
+        <button class="btn" data-say="operator queue">OPERATOR</button>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>CONSOLE</h2><span id="voiceMode">BROWSER VOICE</span></div>
+      <div class="console" id="console"></div>
+      <form class="cmd" id="cmdForm"><input id="cmdInput" placeholder="Type a command, e.g. morning brief" autocomplete="off"><button class="btn">SEND</button></form>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>VENTURES</h2><span>BUILD TRACK</span></div>
+      <div id="ventures"></div>
+    </section>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="col">
+    <section class="panel">
+      <div class="ph"><h2>SCOUT · INTEL</h2><span id="scoutRun"></span></div>
+      <div class="grid2" style="margin-bottom:10px">
+        <div class="stat"><div class="v" id="wTemp"></div><div class="l" id="wCity"></div></div>
+        <div class="stat"><div class="v" id="inbox"></div><div class="l">UNREAD · <span id="flagged"></span> FLAGGED</div></div>
+      </div>
+      <div id="sources"></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>OPERATOR · QUEUE</h2><span>REVIEW BEFORE SEND</span></div>
+      <div id="queue"></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>COACHING</h2><span>DC POWER · ASA · LICENCE</span></div>
+      <div id="coaching"></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2 id="tName">TOURNAMENT</h2><span id="tDate"></span></div>
+      <div class="grid2">
+        <div><div class="big" id="tTeams"></div><div class="sub">TEAMS REGISTERED</div><div class="bar"><i id="tTeamsBar"></i></div></div>
+        <div><div class="big" id="tRev"></div><div class="sub">REVENUE</div><div class="bar"><i id="tRevBar"></i></div></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- SETTINGS -->
+<div class="modal" id="modal">
+  <div class="panel">
+    <div class="ph"><h2>SETTINGS</h2><span>SAVED IN THIS BROWSER ONLY</span></div>
+    <div class="field"><label>SUPABASE PROJECT URL</label><input id="sbUrl" placeholder="https://xxxx.supabase.co"></div>
+    <div class="field"><label>SUPABASE ANON (PUBLISHABLE) KEY</label><input id="sbKey" placeholder="eyJhbGci... or sb_publishable_..."></div>
+    <div class="field"><label>ELEVENLABS API KEY (OPTIONAL)</label><input id="elKey" type="password" placeholder="Leave blank to use the free browser voice"></div>
+    <div class="field"><label>ELEVENLABS VOICE ID</label><input id="elVoice" placeholder="JBFqnCBsd6RMkjVDRZzb (George)"></div>
+    <p class="note">Keys are stored in this browser's local storage, never in the code, so they stay out of your public GitHub repo. Never paste a Supabase service role key here.</p>
+    <div class="core-actions" style="justify-content:flex-end">
+      <button class="btn" id="closeSettings">CANCEL</button>
+      <button class="btn primary" id="saveSettings">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------- state ---------------- */
+let DATA = structuredClone(MOCK_DATA);
+const $ = id => document.getElementById(id);
+/* Public defaults. The anon key is designed to be public: Row Level Security
+   only lets it READ jarvis_state and ADD lines to jarvis_log. */
+const DEFAULTS = {
+  sbUrl: 'https://bqzwybzaqxehuhcljqvb.supabase.co',
+  sbKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxend5YnphcXhlaHVoY2xqcXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwNTAwMDcsImV4cCI6MjExMDYyNjAwN30.mTn451916QEDuQ6Z1kXgy6mC2Y1hgeKaKnIKOC0MDws'
+};
+const store = {
+  get(k){ try{ return localStorage.getItem('jarvis_'+k) || DEFAULTS[k] || ''; }catch(e){ return DEFAULTS[k] || ''; } },
+  set(k,v){ try{ localStorage.setItem('jarvis_'+k, v); }catch(e){} }
+};
+function deepMerge(base, add){
+  if(!add || typeof add!=='object') return base;
+  for(const k in add){
+    if(add[k] && typeof add[k]==='object' && !Array.isArray(add[k]) && base[k] && typeof base[k]==='object') deepMerge(base[k], add[k]);
+    else base[k] = add[k];
+  }
+  return base;
+}
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------------- render ---------------- */
+function render(){
+  const D = DATA;
+  $('modePill').textContent = D.system.mode;
+  $('modePill').classList.toggle('live', D.system.mode !== 'MOCK DATA');
+
+  $('top3').innerHTML = D.advisor.top3.map((p,i)=>`
+    <div class="prio t${p.tier}"><div class="n">0${i+1}</div>
+    <div><em>TIER ${p.tier} · ${esc(p.label).toUpperCase()}</em><b>${esc(p.text)}</b><small>${esc(p.why)}</small></div></div>`).join('');
+
+  $('loop').innerHTML = D.advisor.loop.map(l=>`
+    <div class="row"><span class="d">${esc(l.text)}</span><span class="days ${l.days>=3?'hot':''}">${l.days}D OPEN</span></div>`).join('');
+
+  $('schedCount').textContent = D.schedule.length + ' EVENTS';
+  $('schedule').innerHTML = D.schedule.map(e=>`
+    <div class="row"><span class="t">${esc(e.time)}</span><span class="d">${esc(e.title)}</span>
+    <span class="tag ${e.tag==='DC Power'?'DC':e.tag==='ASA'?'ASA':''}">${esc(e.tag).toUpperCase()}</span></div>`).join('');
+
+  $('scoutRun').textContent = 'LAST RUN ' + D.scout.lastRun;
+  $('wTemp').textContent = D.weather.tempF + '°F';
+  $('wCity').textContent = D.weather.city.toUpperCase();
+  $('inbox').textContent = D.scout.inbox.unread;
+  $('flagged').textContent = D.scout.inbox.flagged;
+  $('sources').innerHTML = D.scout.sources.map(s=>`
+    <div class="row"><span class="d">${esc(s.name)}</span><span class="status ${esc(s.status)}"><span class="dot"></span>${esc(s.status).toUpperCase()}</span></div>`).join('');
+
+  $('queue').innerHTML = D.operator.queue.map(q=>`
+    <div class="row"><span class="tag">${esc(q.type).toUpperCase()}</span><span class="d">${esc(q.subject)}<br><small class="sub">to ${esc(q.to)}</small></span>
+    <span class="status ${q.status==='Needs review'?'unavailable':q.status==='Queued'?'standby':'ok'}">${esc(q.status).toUpperCase()}</span></div>`).join('');
+
+  const c = D.coaching;
+  $('coaching').innerHTML = `
+    <div class="row"><span class="tag DC">DC POWER</span><span class="d">${esc(c.dcpower.next)}<br><small class="sub">${esc(c.dcpower.when)} · ${esc(c.dcpower.focus)}</small></span></div>
+    <div class="row"><span class="tag ASA">ASA</span><span class="d">${esc(c.asa.team)} · ${esc(c.asa.next)}<br><small class="sub">${esc(c.asa.when)} · ${esc(c.asa.roster)}</small></span></div>
+    <div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><span>${esc(c.licence.next)}</span><span class="days">DUE ${esc(c.licence.due).toUpperCase()}</span></div>
+    <div class="bar"><i style="width:${c.licence.progress}%"></i></div><small class="sub">${esc(c.licence.course)} · ${c.licence.progress}% complete</small></div>`;
+
+  const t = D.tournament;
+  $('tName').textContent = t.name.toUpperCase();
+  $('tDate').textContent = t.date.toUpperCase();
+  $('tTeams').textContent = t.teams + '/' + t.cap;
+  $('tTeamsBar').style.width = Math.min(100, t.teams/t.cap*100) + '%';
+  $('tRev').textContent = '$' + t.revenue.toLocaleString();
+  $('tRevBar').style.width = Math.min(100, t.revenue/t.goal*100) + '%';
+
+  $('ventures').innerHTML = D.ventures.map(v=>`
+    <div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><span>${esc(v.name)} <small class="sub">· ${esc(v.task)}</small></span><span class="days">${v.pct}%</span></div>
+    <div class="bar"><i style="width:${v.pct}%"></i></div></div>`).join('');
+
+  $('fW').textContent = D.fitness.workouts + '/' + D.fitness.workoutGoal;
+  $('fS').textContent = D.fitness.steps.toLocaleString();
+}
+
+function tick(){
+  const n = new Date();
+  $('clock').textContent = n.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  $('date').textContent = n.toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'}).toUpperCase();
+}
+
+/* ---------------- Supabase (free tier) ---------------- */
+async function loadSupabase(){
+  const url = store.get('sbUrl'), key = store.get('sbKey');
+  if(!url || !key) return;
+  try{
+    const r = await fetch(url.replace(/\/$/,'') + '/rest/v1/jarvis_state?id=eq.main&select=data,updated_at',
+      { headers:{ apikey:key, Authorization:'Bearer '+key } });
+    if(!r.ok) throw new Error(r.status);
+    const rows = await r.json();
+    if(rows[0] && rows[0].data){
+      DATA = deepMerge(structuredClone(MOCK_DATA), rows[0].data);
+      DATA.system.mode = 'LIVE · SUPABASE';
+      const sb = DATA.scout.sources.find(s=>s.name==='Supabase'); if(sb) sb.status='ok';
+      render();
+    }
+  }catch(e){
+    const sb = DATA.scout.sources.find(s=>s.name==='Supabase'); if(sb){ sb.status='unavailable'; render(); }
+    log('j', 'Supabase is unavailable right now, so I am showing mock data.');
+  }
+}
+async function logToSupabase(role, text){
+  const url = store.get('sbUrl'), key = store.get('sbKey');
+  if(!url || !key) return;
+  try{
+    await fetch(url.replace(/\/$/,'') + '/rest/v1/jarvis_log', { method:'POST',
+      headers:{ apikey:key, Authorization:'Bearer '+key, 'Content-Type':'application/json', Prefer:'return=minimal' },
+      body: JSON.stringify({ role, text }) });
+  }catch(e){}
+}
+
+/* ---------------- console ---------------- */
+function log(who, text){
+  const d = document.createElement('div');
+  d.className = 'msg ' + who;
+  d.innerHTML = `<span class="who">${who==='j'?'JARVIS':DATA.user.name.toUpperCase()}</span>${esc(text)}`;
+  $('console').appendChild(d);
+  $('console').scrollTop = 1e9;
+  logToSupabase(who==='j'?'jarvis':'user', text);
+}
+
+/* ---------------- brain (local rules for now) ---------------- */
+function greeting(){
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
+function think(raw){
+  const q = raw.toLowerCase();
+  const D = DATA;
+  if(/brief|morning|status|where are we|standing/.test(q)){
+    const p = D.advisor.top3;
+    const overdue = D.advisor.loop.filter(l=>l.days>=3);
+    return `${greeting()}, ${D.user.name}. It is ${D.weather.tempF} degrees and ${D.weather.cond.toLowerCase()} in ${D.weather.city.split(',')[0]}. `
+      + `You have ${D.schedule.length} items on the schedule, starting with ${D.schedule[0].title} at ${D.schedule[0].time}. `
+      + `Your top three today. One: ${p[0].text}. Two: ${p[1].text}. Three: ${p[2].text}. `
+      + (overdue.length ? `Accountability check: ${overdue.map(o=>o.text).join(', and ')} ${overdue.length>1?'have':'has'} been open three days or more. ` : '')
+      + `The operator has ${D.operator.queue.length} items waiting for your review. Systems are standing by.`;
+  }
+  if(/schedule|calendar|today|agenda/.test(q))
+    return 'Today: ' + D.schedule.map(e=>`${e.time}, ${e.title}`).join('. ') + '.';
+  if(/priorit|top three|top 3|focus|what should i/.test(q))
+    return 'Your top three: ' + D.advisor.top3.map((p,i)=>`${i+1}, ${p.text}`).join('. ') + '.';
+  if(/operator|draft|queue|email/.test(q))
+    return `${D.operator.queue.length} items in the operator queue. ` + D.operator.queue.map(o=>`${o.type} to ${o.to}: ${o.subject}, ${o.status.toLowerCase()}`).join('. ') + '. Nothing goes out until you approve it.';
+  if(/tournament|3v3|registration/.test(q)){
+    const t = D.tournament;
+    return `${t.name} on ${t.date}: ${t.teams} of ${t.cap} teams registered and $${t.revenue.toLocaleString()} collected against a $${t.goal.toLocaleString()} goal.`;
+  }
+  if(/dc power|match|power/.test(q))
+    return `DC Power: ${D.coaching.dcpower.next}, ${D.coaching.dcpower.when}. Training focus is ${D.coaching.dcpower.focus.toLowerCase()}.`;
+  if(/asa|academy|alexandria|girls/.test(q))
+    return `ASA ${D.coaching.asa.team}: ${D.coaching.asa.next}, ${D.coaching.asa.when}. ${D.coaching.asa.roster}.`;
+  if(/licen|uefa|assignment/.test(q))
+    return `${D.coaching.licence.course}: next up is ${D.coaching.licence.next}, due ${D.coaching.licence.due}. You are ${D.coaching.licence.progress} percent through.`;
+  if(/weather|outside|temperature/.test(q))
+    return `${D.weather.city}: ${D.weather.tempF} degrees, ${D.weather.cond.toLowerCase()}, high of ${D.weather.high}, low of ${D.weather.low}. Wind ${D.weather.wind}.`;
+  if(/venture|business|llc|prado|hunt|website/.test(q))
+    return D.ventures.map(v=>`${v.name}, ${v.task}, ${v.pct} percent`).join('. ') + '.';
+  if(/time/.test(q)) return 'It is ' + new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) + '.';
+  if(/hello|hey|hi jarvis|jarvis$/.test(q)) return `At your service, ${D.user.callsign}.`;
+  if(/thank/.test(q)) return 'Always a pleasure.';
+  return 'I do not have a brain connected for that yet. Try morning brief, schedule, priorities, operator queue, tournament, DC Power, ASA, licence, or weather.';
+}
+
+/* ---------------- voice out ---------------- */
+let speaking = false;
+function setOrb(state){
+  const o = $('orb'); o.classList.remove('listening','speaking','thinking');
+  if(state) o.classList.add(state);
+  $('coreLabel').textContent = {listening:'LISTENING', speaking:'SPEAKING', thinking:'PROCESSING'}[state] || 'SYSTEMS ONLINE';
+}
+function pickVoice(){
+  const vs = speechSynthesis.getVoices();
+  return vs.find(v=>/en-GB/i.test(v.lang) && /male|daniel|george|arthur|ryan/i.test(v.name))
+      || vs.find(v=>/en-GB/i.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang));
+}
+function browserSpeak(text){
+  return new Promise(res=>{
+    if(!('speechSynthesis' in window)) return res();
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const v = pickVoice(); if(v) u.voice = v;
+    u.rate = 1.0; u.pitch = 0.9;
+    u.onend = u.onerror = res;
+    speechSynthesis.speak(u);
+  });
+}
+async function elevenSpeak(text){
+  const key = store.get('elKey'); const voice = store.get('elVoice') || 'JBFqnCBsd6RMkjVDRZzb';
+  const r = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voice, {
+    method:'POST', headers:{ 'xi-api-key':key, 'Content-Type':'application/json', Accept:'audio/mpeg' },
+    body: JSON.stringify({ text, model_id:'eleven_flash_v2_5' }) });
+  if(!r.ok) throw new Error('ElevenLabs ' + r.status);
+  const url = URL.createObjectURL(await r.blob());
+  const a = new Audio(url);
+  await new Promise((res, rej)=>{ a.onended = res; a.onerror = rej; a.play().catch(rej); });
+}
+async function speak(text){
+  log('j', text);
+  speaking = true; setOrb('speaking');
+  try{
+    if(store.get('elKey')) await elevenSpeak(text); else await browserSpeak(text);
+  }catch(e){
+    log('j', 'ElevenLabs did not respond, switching to the browser voice.');
+    await browserSpeak(text);
+  }
+  speaking = false; setOrb(null);
+}
+async function handle(text){
+  if(!text.trim()) return;
+  log('u', text);
+  setOrb('thinking');
+  await new Promise(r=>setTimeout(r, 350));
+  speak(think(text));
+}
+
+/* ---------------- voice in ---------------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false, heard = '';
+if(SR){
+  rec = new SR(); rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = true;
+  rec.onresult = e => { heard = Array.from(e.results).map(r=>r[0].transcript).join(' '); $('coreLabel').textContent = heard.toUpperCase().slice(-40) || 'LISTENING'; };
+  rec.onend = () => { if(listening){ listening = false; setOrb(null); if(heard) handle(heard); heard=''; } };
+  rec.onerror = e => { listening = false; setOrb(null); if(e.error==='not-allowed') log('j','Microphone access was blocked. Allow the mic for this page and try again.'); };
+}
+function startListen(){
+  if(!rec){ log('j','Voice input needs Chrome or Edge. You can still type commands below.'); return; }
+  if(listening) return;
+  speechSynthesis.cancel(); heard=''; listening = true; setOrb('listening');
+  try{ rec.start(); }catch(e){}
+}
+function stopListen(){ if(rec && listening) rec.stop(); }
+
+/* ---------------- wiring ---------------- */
+$('orb').addEventListener('click', ()=> listening ? stopListen() : startListen());
+let spaceDown = false;
+document.addEventListener('keydown', e=>{
+  if(e.code==='Space' && !spaceDown && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)){ e.preventDefault(); spaceDown = true; startListen(); }
+});
+document.addEventListener('keyup', e=>{ if(e.code==='Space' && spaceDown){ spaceDown = false; stopListen(); } });
+$('briefBtn').onclick = ()=> handle('morning brief');
+document.querySelectorAll('[data-say]').forEach(b=> b.onclick = ()=> handle(b.dataset.say));
+$('cmdForm').onsubmit = e=>{ e.preventDefault(); const v=$('cmdInput').value; $('cmdInput').value=''; handle(v); };
+
+$('settingsBtn').onclick = ()=>{
+  ['sbUrl','sbKey','elKey','elVoice'].forEach(k=> $(k).value = store.get(k));
+  $('modal').classList.add('open');
+};
+$('closeSettings').onclick = ()=> $('modal').classList.remove('open');
+$('saveSettings').onclick = ()=>{
+  ['sbUrl','sbKey','elKey','elVoice'].forEach(k=> store.set(k, $(k).value.trim()));
+  $('modal').classList.remove('open');
+  $('voiceMode').textContent = store.get('elKey') ? 'ELEVENLABS VOICE' : 'BROWSER VOICE';
+  log('j','Settings saved.');
+  loadSupabase();
+};
+
+if('speechSynthesis' in window) speechSynthesis.onvoiceschanged = ()=>{};
+$('voiceMode').textContent = store.get('elKey') ? 'ELEVENLABS VOICE' : 'BROWSER VOICE';
+render(); tick(); setInterval(tick, 1000);
+loadSupabase(); setInterval(loadSupabase, 60000);
+log('j', `${greeting()}, ${DATA.user.name}. Command center online. Press Morning Brief or hold space to talk.`);
+</script>
+</body>
+</html>
