@@ -182,6 +182,10 @@ main{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;padding:18px 28p
       <div class="ph"><h2>SCHEDULE</h2><span id="schedCount"></span></div>
       <div id="schedule"></div>
     </section>
+    <section class="panel" id="aspirePanel" style="display:none">
+      <div class="ph"><h2>ASPIRE WATCH</h2><span id="aspireDay"></span></div>
+      <div id="aspire"></div>
+    </section>
     <section class="panel">
       <div class="ph"><h2>PERFORMANCE</h2><span>THIS WEEK</span></div>
       <div class="grid2">
@@ -349,6 +353,15 @@ function render(){
     <div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><span>${esc(v.name)} <small class="sub">· ${esc(v.task)}</small></span><span class="days">${v.pct}%</span></div>
     <div class="bar"><i style="width:${v.pct}%"></i></div></div>`).join('');
 
+  const A = D.aspire;
+  $('aspirePanel').style.display = A ? '' : 'none';
+  if(A){
+    $('aspireDay').textContent = String(A.day || 'TODAY').toUpperCase();
+    const sess = (A.sessions||[]).map(x=>`
+    <div class="row"><span class="t">${esc(x.time)}</span><span class="d">${esc(x.team)}<br><small class="sub">${esc(x.coach)} \u00b7 ${esc(x.field)}</small></span><span class="status ${x.status==='Cancelled'?'unavailable':'ok'}">${esc(x.status||'On').toUpperCase()}</span></div>`).join('') || '<div class="sub">No Aspire sessions found for today.</div>';
+    const list = (title, arr) => (arr||[]).length ? '<div class="sub" style="margin:12px 0 4px;letter-spacing:.2em">' + title + '</div>' + arr.map(r=>`<div class="row"><span class="d" style="font-size:14px">${esc(r.text)}</span></div>`).join('') : '';
+    $('aspire').innerHTML = sess + list('CHANGES', A.changes) + list('RESULTS', A.results);
+  }
   $('fW').textContent = D.fitness.workouts + '/' + D.fitness.workoutGoal;
   $('fS').textContent = D.fitness.steps.toLocaleString();
 }
@@ -434,6 +447,10 @@ function think(raw){
       + `Your top three today. One: ${p[0].text}. Two: ${p[1].text}. Three: ${p[2].text}. `
       + (overdue.length ? `Accountability check: ${overdue.map(o=>o.text).join(', and ')} ${overdue.length>1?'have':'has'} been open three days or more. ` : '')
       + `The operator has ${D.operator.queue.length} items waiting for your review. Systems are standing by.`;
+  }
+  if(/aspire|observe|watch/.test(q)){
+    const s = ((D.aspire||{}).sessions||[]).filter(x=>x.status!=='Cancelled');
+    return s.length ? 'Aspire sessions today: ' + s.map(x=>`${x.time}, ${x.team} with ${x.coach} at ${x.field}`).join('. ') + '.' : 'I have no Aspire sessions on the schedule for today.';
   }
   if(/schedule|calendar|today|agenda/.test(q))
     return 'Today: ' + D.schedule.map(e=>`${e.time}, ${e.title}`).join('. ') + '.';
