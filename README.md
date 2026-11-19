@@ -15,7 +15,7 @@ Built on the blueprint from Ray Fu's "Complete Guide to building Jarvis with Cla
 
 | Piece | Free tool | Notes |
 |---|---|---|
-| Hosting | GitHub Pages | Free for public repos. Your mock data is visible to anyone, so keep real private data in Supabase. |
+| Hosting | GitHub Pages | Free for public repos. The page itself is public but shows nothing until you sign in. |
 | Database | Supabase Free | Free projects pause after about a week with no activity. Open the dashboard regularly or restore from the Supabase dashboard. |
 | Voice in | Browser speech recognition | Works in Chrome and Edge. Needs https (GitHub Pages gives you that). |
 | Voice out | Browser speech synthesis | Free. Picks a British voice if your computer has one. |
@@ -35,11 +35,13 @@ Built on the blueprint from Ray Fu's "Complete Guide to building Jarvis with Cla
 4. Go to **Settings > Pages**. Under Source pick **Deploy from a branch**, branch `main`, folder `/ (root)`, **Save**.
 5. Wait a minute. Your Jarvis is live at `https://YOUR-USERNAME.github.io/jarvis/`.
 
-## Step 3 · Supabase (already connected)
+## Step 3 · Supabase (already connected, private)
+
+**Private by default.** The site opens on a sign in screen. Only emails listed in the `jarvis_allowed` table can see anything. All dashboard content lives in Supabase, not in this public file.
 
 This copy is already wired to the Supabase project **jarvis** (Prado & Co. org). The tables from `supabase.sql` are created and the project URL and public anon key are built into `index.html` under `DEFAULTS`.
 
-The top pill shows **LIVE · SUPABASE** when it connects, and the tournament shows 31 teams from the seed row.
+After you sign in, the top pill shows **LIVE · SECURE**.
 
 To point it at a different project, run `supabase.sql` there and paste the new URL and anon key in **⚙**.
 

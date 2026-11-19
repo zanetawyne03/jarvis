@@ -8,77 +8,26 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 /* =====================================================================
-   MOCK DATA · every number on the screen comes from this one object.
-   Later, Supabase (table: jarvis_state, row id 'main') overrides any
-   field you send it. You never have to redesign the layout.
-   This file is public on GitHub Pages, so keep real private data in
-   Supabase, not here.
+   EMPTY SHELL · this file is public, so it holds no personal data.
+   After you sign in, everything on screen loads from Supabase
+   (table: jarvis_state, row id 'main'), readable only by accounts on
+   the jarvis_allowed list.
    ===================================================================== */
 const MOCK_DATA = {
-  user: { name: "Z", callsign: "Coach" },
-  system: { mode: "MOCK DATA", version: "1.0" },
-  weather: { city: "Alexandria, VA", tempF: 48, cond: "Clear skies", high: 54, low: 39, wind: "6 mph NW" },
-
-  advisor: {
-    top3: [
-      { tier: 1, label: "Blocking revenue", text: "Close Winter 3v3 early bird pricing tonight", why: "28 of 40 teams in. Price goes up Friday, 4 teams have unpaid carts." },
-      { tier: 2, label: "Outperforming", text: "Double down on the U12 bracket", why: "U12 signups are running 40% ahead of last year. Add 4 slots." },
-      { tier: 3, label: "Slow leak", text: "Reply to 3 flagged parent emails", why: "Oldest is 2 days old. Operator has drafts ready for review." }
-    ],
-    loop: [
-      { text: "Submit UEFA A Licence assignment draft", days: 3 },
-      { text: "File Prado Wyne LLC articles with Virginia SCC", days: 5 },
-      { text: "Upload session plan to DC Power shared drive", days: 1 }
-    ]
-  },
-
-  schedule: [
-    { time: "6:30 AM", title: "Strength session", tag: "Fitness" },
-    { time: "10:00 AM", title: "DC Power FC training · assistant coach", tag: "DC Power" },
-    { time: "1:30 PM", title: "Video review · How We Defend", tag: "DC Power" },
-    { time: "5:30 PM", title: "ASA Girls Academy practice", tag: "ASA" },
-    { time: "8:00 PM", title: "UEFA A Licence study block", tag: "Licence" }
-  ],
-
-  scout: {
-    lastRun: "6:00 AM",
-    sources: [
-      { name: "Google Calendar", status: "ok" },
-      { name: "Gmail", status: "ok" },
-      { name: "TeamSnap", status: "ok" },
-      { name: "ASA Slack", status: "ok" },
-      { name: "Stripe", status: "unavailable" },
-      { name: "Supabase", status: "standby" }
-    ],
-    inbox: { unread: 14, flagged: 3, parents: 5 }
-  },
-
-  operator: {
-    queue: [
-      { type: "Email", to: "ASA parents", subject: "Saturday travel times", status: "Draft ready" },
-      { type: "Slack", to: "#ga-coaches", subject: "Weekend field assignments", status: "Draft ready" },
-      { type: "Email", to: "3v3 registrants", subject: "Early bird ends Friday", status: "Needs review" },
-      { type: "Post", to: "Instagram", subject: "Winter 3v3 bracket reveal", status: "Queued" }
-    ]
-  },
-
-  coaching: {
-    dcpower: { next: "Matchday 14 · Home", when: "Sat 7:00 PM", focus: "Rest defence and counter press" },
-    asa: { team: "Girls Academy", next: "League match · Away", when: "Sun 11:00 AM", roster: "18 of 20 available" },
-    licence: { course: "UEFA A Licence", next: "Assignment 3 · Session analysis", due: "Nov 24", progress: 62 }
-  },
-
-  tournament: { name: "Winter 3v3 Classic", date: "Dec 13", teams: 28, cap: 40, revenue: 4200, goal: 6000 },
-
-  ventures: [
-    { name: "Prado & Co.", task: "LLC filing and EIN", pct: 40 },
-    { name: "The Hunt", task: "Next estate sale prep", pct: 70 },
-    { name: "Coaching website", task: "Homepage and booking page", pct: 25 }
-  ],
-
-  fitness: { workouts: 3, workoutGoal: 5, steps: 8420, stepsGoal: 10000, sleep: 6.8 }
+  user: { name: "", callsign: "Coach" },
+  system: { mode: "LOCKED", version: "1.1" },
+  weather: { city: "", tempF: "--", cond: "", high: "", low: "", wind: "" },
+  advisor: { top3: [], loop: [] },
+  schedule: [],
+  scout: { lastRun: "--", sources: [], inbox: { unread: "--", flagged: "--", parents: 0 } },
+  operator: { queue: [] },
+  coaching: { dcpower: { next: "", when: "", focus: "" }, asa: { team: "", next: "", when: "", roster: "" }, licence: { course: "", next: "", due: "", progress: 0 } },
+  tournament: { name: "Tournament", date: "", teams: 0, cap: 1, revenue: 0, goal: 1 },
+  ventures: [],
+  fitness: { workouts: 0, workoutGoal: 0, steps: 0, stepsGoal: 0, sleep: 0 }
 };
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#03070d; --panel:rgba(8,22,34,.72); --line:rgba(0,212,255,.22); --cyan:#00d4ff;
@@ -197,6 +146,7 @@ main{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;padding:18px 28p
 .field input{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--text);padding:9px 10px;font-family:'Rajdhani';font-size:15px}
 .note{font-size:13px;color:var(--dim);margin-top:8px;line-height:1.4}
 
+#gate{background:rgba(3,7,13,.97);z-index:60}
 ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:var(--line)}
 @media(max-width:1150px){main{grid-template-columns:1fr 1fr}.center{grid-column:1/-1;order:-1}}
 @media(max-width:720px){main{grid-template-columns:1fr;padding:12px}header{flex-wrap:wrap;gap:10px;padding:12px}.clock{font-size:18px}}
@@ -213,6 +163,7 @@ main{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;padding:18px 28p
     <span class="pill" id="modePill">MOCK DATA</span>
     <div class="clock"><span id="clock">00:00</span><small id="date">LOADING</small></div>
     <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+    <button class="icon-btn" id="signOutBtn" title="Sign out" style="display:none">⏻</button>
   </div>
 </header>
 
@@ -294,6 +245,19 @@ main{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;padding:18px 28p
   </div>
 </main>
 
+<!-- SIGN IN -->
+<div class="modal open" id="gate">
+  <div class="panel">
+    <div class="ph"><h2>SECURE ACCESS</h2><span>AUTHORIZED USERS ONLY</span></div>
+    <p class="note" style="font-size:15px;color:var(--text)">Enter your email and Jarvis will send you a sign in link.</p>
+    <form id="gateForm">
+      <div class="field"><label>EMAIL</label><input id="gateEmail" type="email" required autocomplete="email"></div>
+      <div class="core-actions" style="justify-content:flex-end"><button class="btn primary">SEND LINK</button></div>
+    </form>
+    <p class="note" id="gateMsg"></p>
+  </div>
+</div>
+
 <!-- SETTINGS -->
 <div class="modal" id="modal">
   <div class="panel">
@@ -302,7 +266,7 @@ main{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;padding:18px 28p
     <div class="field"><label>SUPABASE ANON (PUBLISHABLE) KEY</label><input id="sbKey" placeholder="eyJhbGci... or sb_publishable_..."></div>
     <div class="field"><label>ELEVENLABS API KEY (OPTIONAL)</label><input id="elKey" type="password" placeholder="Leave blank to use the free browser voice"></div>
     <div class="field"><label>ELEVENLABS VOICE ID</label><input id="elVoice" placeholder="JBFqnCBsd6RMkjVDRZzb (George)"></div>
-    <p class="note">Keys are stored in this browser's local storage, never in the code, so they stay out of your public GitHub repo. Never paste a Supabase service role key here.</p>
+    <p class="note">Keys are stored in this browser's local storage, never in the code, so they stay out of your public GitHub repo. Leave the Supabase fields blank to use the built-in project. Never paste a Supabase service role key here.</p>
     <div class="core-actions" style="justify-content:flex-end">
       <button class="btn" id="closeSettings">CANCEL</button>
       <button class="btn primary" id="saveSettings">SAVE</button>
@@ -338,7 +302,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;
 function render(){
   const D = DATA;
   $('modePill').textContent = D.system.mode;
-  $('modePill').classList.toggle('live', D.system.mode !== 'MOCK DATA');
+  $('modePill').classList.toggle('live', String(D.system.mode).startsWith('LIVE'));
 
   $('top3').innerHTML = D.advisor.top3.map((p,i)=>`
     <div class="prio t${p.tier}"><div class="n">0${i+1}</div>
@@ -393,34 +357,53 @@ function tick(){
   $('date').textContent = n.toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'}).toUpperCase();
 }
 
-/* ---------------- Supabase (free tier) ---------------- */
+/* ---------------- Supabase sign in + data ---------------- */
+let sb = null, AUTHED = false;
+function client(){
+  if(sb) return sb;
+  if(!window.supabase) return null;
+  sb = window.supabase.createClient(store.get('sbUrl'), store.get('sbKey'));
+  return sb;
+}
+function showGate(msg){ $('gate').classList.add('open'); $('signOutBtn').style.display='none'; if(msg) $('gateMsg').textContent = msg; }
+function hideGate(){ $('gate').classList.remove('open'); $('signOutBtn').style.display=''; }
 async function loadSupabase(){
-  const url = store.get('sbUrl'), key = store.get('sbKey');
-  if(!url || !key) return;
-  try{
-    const r = await fetch(url.replace(/\/$/,'') + '/rest/v1/jarvis_state?id=eq.main&select=data,updated_at',
-      { headers:{ apikey:key, Authorization:'Bearer '+key } });
-    if(!r.ok) throw new Error(r.status);
-    const rows = await r.json();
-    if(rows[0] && rows[0].data){
-      DATA = deepMerge(structuredClone(MOCK_DATA), rows[0].data);
-      DATA.system.mode = 'LIVE · SUPABASE';
-      const sb = DATA.scout.sources.find(s=>s.name==='Supabase'); if(sb) sb.status='ok';
-      render();
-    }
-  }catch(e){
-    const sb = DATA.scout.sources.find(s=>s.name==='Supabase'); if(sb){ sb.status='unavailable'; render(); }
-    log('j', 'Supabase is unavailable right now, so I am showing mock data.');
-  }
+  const c = client(); if(!c || !AUTHED) return false;
+  const { data, error } = await c.from('jarvis_state').select('data').eq('id','main').maybeSingle();
+  if(error){ log('j', 'Supabase is unavailable right now.'); return false; }
+  if(!data){ showGate('This account is not on the Jarvis access list.'); return false; }
+  DATA = deepMerge(structuredClone(MOCK_DATA), data.data);
+  DATA.system.mode = 'LIVE \u00b7 SECURE';
+  const s = DATA.scout.sources.find(s=>s.name==='Supabase'); if(s) s.status='ok';
+  render();
+  return true;
 }
 async function logToSupabase(role, text){
-  const url = store.get('sbUrl'), key = store.get('sbKey');
-  if(!url || !key) return;
-  try{
-    await fetch(url.replace(/\/$/,'') + '/rest/v1/jarvis_log', { method:'POST',
-      headers:{ apikey:key, Authorization:'Bearer '+key, 'Content-Type':'application/json', Prefer:'return=minimal' },
-      body: JSON.stringify({ role, text }) });
-  }catch(e){}
+  const c = client(); if(!c || !AUTHED) return;
+  try{ await c.from('jarvis_log').insert({ role, text }); }catch(e){}
+}
+function boot(){
+  const c = client();
+  if(!c){ showGate('Could not reach the sign in service. Check your connection and reload.'); return; }
+  c.auth.onAuthStateChange((event, session)=>{
+    setTimeout(async ()=>{
+      if(session && !AUTHED){
+        AUTHED = true; hideGate();
+        if(location.hash.includes('access_token')) history.replaceState(null, '', location.pathname);
+        if(await loadSupabase()) log('j', `${greeting()}, ${DATA.user.name}. Command center online. Press Morning Brief or hold space to talk.`);
+      } else if(!session){
+        AUTHED = false; DATA = structuredClone(MOCK_DATA); render(); showGate();
+      }
+    }, 0);
+  });
+  $('gateForm').onsubmit = async e=>{
+    e.preventDefault();
+    const email = $('gateEmail').value.trim();
+    $('gateMsg').textContent = 'Sending...';
+    const { error } = await c.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } });
+    $('gateMsg').textContent = error ? ('Could not send the link: ' + error.message) : 'Check your email for the sign in link.';
+  };
+  $('signOutBtn').onclick = ()=> c.auth.signOut();
 }
 
 /* ---------------- console ---------------- */
@@ -522,6 +505,7 @@ async function speak(text){
 }
 async function handle(text){
   if(!text.trim()) return;
+  if(!AUTHED){ showGate('Sign in first.'); return; }
   log('u', text);
   setOrb('thinking');
   await new Promise(r=>setTimeout(r, 350));
@@ -572,8 +556,7 @@ $('saveSettings').onclick = ()=>{
 if('speechSynthesis' in window) speechSynthesis.onvoiceschanged = ()=>{};
 $('voiceMode').textContent = store.get('elKey') ? 'ELEVENLABS VOICE' : 'BROWSER VOICE';
 render(); tick(); setInterval(tick, 1000);
-loadSupabase(); setInterval(loadSupabase, 60000);
-log('j', `${greeting()}, ${DATA.user.name}. Command center online. Press Morning Brief or hold space to talk.`);
+boot(); setInterval(loadSupabase, 60000);
 </script>
 </body>
 </html>
