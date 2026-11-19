@@ -146,6 +146,9 @@ main{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;padding:18px 28p
 .field input{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--text);padding:9px 10px;font-family:'Rajdhani';font-size:15px}
 .note{font-size:13px;color:var(--dim);margin-top:8px;line-height:1.4}
 
+.mini{background:none;border:1px solid var(--line);color:var(--dim);font-family:'Orbitron';font-size:9px;letter-spacing:.15em;padding:3px 7px;margin:6px 6px 0 0;cursor:pointer}
+.mini:hover{color:var(--cyan2);border-color:var(--cyan)}
+.loop .row .mini{margin:0 0 0 6px}
 #gate{background:rgba(3,7,13,.97);z-index:60}
 ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:var(--line)}
 @media(max-width:1150px){main{grid-template-columns:1fr 1fr}.center{grid-column:1/-1;order:-1}}
@@ -302,6 +305,18 @@ function deepMerge(base, add){
 }
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+/* ---------------- advisor actions ---------------- */
+function actBtns(id){ return '<span class="acts"><button class="mini" onclick="markAction(' + Number(id) + ',\'done\')">DONE</button><button class="mini" onclick="markAction(' + Number(id) + ',\'dropped\')">DROP</button></span>'; }
+async function markAction(id, status){
+  const c = client(); if(!c || !AUTHED) return;
+  const { error } = await c.from('jarvis_actions').update({ status, closed_at: new Date().toISOString() }).eq('id', id);
+  if(error){ log('j', 'Could not update that action. Try again.'); return; }
+  DATA.advisor.top3 = (DATA.advisor.top3||[]).filter(a=>a.id!==id);
+  DATA.advisor.loop = (DATA.advisor.loop||[]).filter(a=>a.id!==id);
+  render();
+  log('j', status==='done' ? 'Marked done. Good work.' : 'Dropped. I will stop bringing it up.');
+}
+
 /* ---------------- render ---------------- */
 function render(){
   const D = DATA;
@@ -310,10 +325,10 @@ function render(){
 
   $('top3').innerHTML = D.advisor.top3.map((p,i)=>`
     <div class="prio t${p.tier}"><div class="n">0${i+1}</div>
-    <div><em>TIER ${p.tier} · ${esc(p.label).toUpperCase()}</em><b>${esc(p.text)}</b><small>${esc(p.why)}</small></div></div>`).join('');
+    <div><em>TIER ${p.tier} · ${esc(p.label).toUpperCase()}</em><b>${esc(p.text)}</b><small>${esc(p.why)}</small>${p.id?actBtns(p.id):''}</div></div>`).join('');
 
   $('loop').innerHTML = D.advisor.loop.map(l=>`
-    <div class="row"><span class="d">${esc(l.text)}</span><span class="days ${l.days>=3?'hot':''}">${l.days}D OPEN</span></div>`).join('');
+    <div class="row"><span class="d">${esc(l.text)}</span><span class="days ${l.days>=3?'hot':''}">${l.days}D OPEN</span>${l.id?actBtns(l.id):''}</div>`).join('');
 
   $('schedCount').textContent = D.schedule.length + ' EVENTS';
   $('schedule').innerHTML = D.schedule.map(e=>`
@@ -390,6 +405,11 @@ async function loadSupabase(){
   DATA = deepMerge(structuredClone(MOCK_DATA), data.data);
   DATA.system.mode = 'LIVE \u00b7 SECURE';
   const s = DATA.scout.sources.find(s=>s.name==='Supabase'); if(s) s.status='ok';
+  const shownIds = [...(DATA.advisor.top3||[]), ...(DATA.advisor.loop||[])].map(a=>a.id).filter(Boolean);
+  if(shownIds.length){
+    const { data: openRows } = await c.from('jarvis_actions').select('id').in('id', shownIds).eq('status','open');
+    if(openRows){ const openSet = new Set(openRows.map(r=>r.id)); DATA.advisor.top3 = DATA.advisor.top3.filter(a=>!a.id||openSet.has(a.id)); DATA.advisor.loop = DATA.advisor.loop.filter(a=>!a.id||openSet.has(a.id)); }
+  }
   render();
   return true;
 }
